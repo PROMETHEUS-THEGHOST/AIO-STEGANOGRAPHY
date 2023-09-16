@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 import customtkinter
+import threading
 
 result_label = None
 
@@ -12,6 +13,8 @@ def msgtobinary(msg):
         result = [format(i, "08b") for i in msg]
     elif type(msg) == int or type(msg) == np.uint8:
         result = format(msg, "08b")
+    else:
+        result = ""
     return result
 
 def encode_img_data(img):
@@ -82,8 +85,9 @@ def encode_img_data(img):
 
 def decode_img_data(img):
     data_binary = ""
-    for i in img:
-        for pixel in i:
+    for i in range(img.shape[0]):
+        for j in range(img.shape[1]):
+            pixel = img[i, j]
             r, g, b = msgtobinary(pixel)
             data_binary += r[-1]
             data_binary += g[-1]
@@ -95,16 +99,55 @@ def decode_img_data(img):
     for byte in total_bytes:
         decoded_data += chr(int(byte, 2))
         if decoded_data[-5:] == "*^*^*":
-            result_label.configure(text=f"The Encoded data that was hidden in the Image was :--  {decoded_data[:-5]}")
-
+            return decoded_data[:-5]
+    return ""
 
 def encode_image():
             image = cv2.imread("Sample_cover_files/cover_image.jpg")
             encode_img_data(image)
 
 def decode_image():
-            image1 = cv2.imread(input("Enter the Image you need to Decode to get the Secret message :  "))
-            decode_img_data(image1)
+    def perform_decode():
+        image_name = image_entry.get()
+        if not image_name:
+            feedback_label.configure(text="Please enter the name of the image file.")
+            return
+
+        # Assuming the image is in the same directory as the program
+        image_path = image_name
+        image = cv2.imread(image_path)
+        if image is None:
+            feedback_label.configure(text=f"Invalid image file: {image_name}")
+            return
+
+        decoded_message = decode_img_data(image)
+        feedback_label.configure(text="Decoded message:\n" + decoded_message)
+
+    def decode_image_thread():
+        decode_button.configure(state="disabled")
+        decoded_message = perform_decode()
+        feedback_label.configure(text="Decoded message:\n" + decoded_message)
+        decode_button.configure(state="normal")
+
+    decode_window = customtkinter.CTk()
+    decode_window.geometry("400x200")
+    decode_window.title("Decode Image")
+
+    image_label = customtkinter.CTkLabel(decode_window, text="Enter the name of the image file:")
+    image_label.pack(padx=20, pady=10)
+
+    image_entry = customtkinter.CTkEntry(decode_window, width=250, height= 25)
+    image_entry.pack(padx=20, pady=10)
+
+    decode_button = customtkinter.CTkButton(decode_window, text="Decode Image", width=30, command=decode_image_thread)
+    decode_button.pack(padx=20, pady=10)
+
+    feedback_label = customtkinter.CTkLabel(decode_window, text="", width=250, height= 25)
+    feedback_label.pack(padx=20, pady=10)
+
+    decode_window.mainloop()
+
+
 
 def img_steg():
     img_steg_window = customtkinter.CTk()
@@ -124,6 +167,243 @@ def img_steg():
     exit_button.pack(padx=20, pady=10)
 
     img_steg_window.mainloop()
+
+def txt_encode(text):
+    def perform_encode():
+        def calculate_length(text):
+            l = len(text)
+            i = 0
+            add = ""
+            while i < l:
+                t = ord(text[i])
+                if t >= 32 and t <= 64:
+                    t1 = t + 48
+                    t2 = t1 ^ 170  # 170: 10101010
+                    res = bin(t2)[2:].zfill(8)
+                    add += "0011" + res
+                else:
+                    t1 = t - 48
+                    t2 = t1 ^ 170
+                    res = bin(t2)[2:].zfill(8)
+                    add += "0110" + res
+                i += 1
+            res1 = add + "111111111111"
+            return res1
+
+        def encode_data():
+            text_to_encode = text_entry.get("1.0", "end-1c")
+            if not text_to_encode:
+                feedback_label.configure(text="Please enter data to be encoded.")
+                return
+
+            binary_text = calculate_length(text_to_encode)
+            feedback_label.configure(text=f"The string after binary conversion applying all the transformations:\n{binary_text}")
+            length = len(binary_text)
+            feedback_label2.configure(text=f"Length of binary after conversion: {length}")
+
+            ZWC = {"00": u'\u200C', "01": u'\u202C', "11": u'\u202D', "10": u'\u200E'}
+            file1 = open("Sample_cover_files/cover_text.txt", "r+")
+            name_of_file = name_entry.get()
+            if not name_of_file:
+                feedback_label.configure(text="Please enter the name of the Stego file after Encoding (with extension).")
+                return
+
+            file3 = open(name_of_file, "w+", encoding="utf-8")
+            word = []
+            for line in file1:
+                word += line.split()
+
+            i = 0
+            while i < len(binary_text):
+                s = word[int(i / 12)]
+                j = 0
+                x = ""
+                HM_SK = ""
+                while j < 12:
+                    x = binary_text[j + i] + binary_text[i + j + 1]
+                    HM_SK += ZWC[x]
+                    j += 2
+                s1 = s + HM_SK
+                file3.write(s1)
+                file3.write(" ")
+                i += 12
+
+            t = int(len(binary_text) / 12)
+            while t < len(word):
+                file3.write(word[t])
+                file3.write(" ")
+                t += 1
+
+            file3.close()
+            file1.close()
+            feedback_label.configure(text="Stego file has been successfully generated.")
+
+        encode_window = customtkinter.CTk()
+        encode_window.geometry("600x400")
+        encode_window.title("Encode Text Data")
+
+        text_label = customtkinter.CTkLabel(encode_window, text="Enter data to be encoded:")
+        text_label.pack(padx=20, pady=10)
+
+        text_entry = customtkinter.CTkText(encode_window, width=140, height=10)
+        text_entry.pack(padx=20, pady=10)
+
+
+        encode_button = customtkinter.CTkButton(encode_window, text="Encode Text Data", width=30, command=encode_data)
+        encode_button.pack(padx=20, pady=10)
+
+        feedback_label = customtkinter.CTkLabel(encode_window, text="", width=60, height=5)
+        feedback_label.pack(padx=20, pady=10)
+
+        feedback_label2 = customtkinter.CTkLabel(encode_window, text="", width=60)
+        feedback_label2.pack(padx=20, pady=10)
+
+        name_label = customtkinter.CTkLabel(encode_window, text="Enter the name of the Stego file (with extension):")
+        name_label.pack(padx=20, pady=10)
+
+        name_entry = customtkinter.CTkEntry(encode_window, width=250, height= 50)
+        name_entry.pack(padx=20, pady=10)
+
+        encode_window.mainloop()
+
+def encode_txt_data():
+    def perform_encode():
+        try:
+            with open("Sample_cover_files/cover_text.txt", "r") as file:
+                count2 = sum(len(word) for line in file for word in line.split())
+                max_words = int(count2 / 6)
+                feedback_label.configure(text=f"Maximum number of words that can be inserted: {max_words}")
+        except FileNotFoundError:
+            feedback_label.configure(text="Cover file not found.")
+
+        text_to_encode = text_entry.get("1.0", "end-1c")
+        l = len(text_to_encode)
+
+        if l <= max_words:
+            feedback_label.configure(text="Input message can be hidden in the cover file.")
+            txt_encode(text_to_encode)
+        else:
+            feedback_label.configure(text="String is too big, please reduce string size.")
+
+    encode_window = customtkinter.CTk()
+    encode_window.geometry("400x400")
+    encode_window.title("Encode Text Data")
+
+    text_label = customtkinter.CTkLabel(encode_window, text="Enter data to be encoded:")
+    text_label.pack(padx=20, pady=10)
+
+    text_entry = customtkinter.CTkEntry(encode_window, width=200, height=10)
+    text_entry.pack(padx=20, pady=10)
+
+    encode_button = customtkinter.CTkButton(encode_window, text="Encode Text Data", width=30, command=perform_encode)
+    encode_button.pack(padx=20, pady=10)
+
+    feedback_label = customtkinter.CTkLabel(encode_window, text="", width=40, height=5)
+    feedback_label.pack(padx=20, pady=10)
+
+    encode_window.mainloop()
+
+def decode_txt_data():
+    def perform_decode():
+        def BinaryToDecimal(binary):
+            decimal = int(binary, 2)
+            return decimal
+
+        def decode_data():
+            stego_file_name = stego_entry.get()
+            if not stego_file_name:
+                feedback_label.configure(text="Please enter the stego file name (with extension) to decode the message.")
+                return
+
+            ZWC_reverse = {u'\u200C': "00", u'\u202C': "01", u'\u202D': "11", u'\u200E': "10"}
+            temp = ''
+            try:
+                with open(stego_file_name, "r", encoding="utf-8") as file4:
+                    for line in file4:
+                        for words in line.split():
+                            T1 = words
+                            binary_extract = ""
+                            for letter in T1:
+                                if letter in ZWC_reverse:
+                                    binary_extract += ZWC_reverse[letter]
+                            if binary_extract == "111111111111":
+                                break
+                            else:
+                                temp += binary_extract
+
+                feedback_label.configure(text="Encrypted message presented in code bits:\n" + temp)
+                lengthd = len(temp)
+                feedback_label2.configure(text="Length of encoded bits: " + str(lengthd))
+
+                i = 0
+                a = 0
+                b = 4
+                c = 4
+                d = 12
+                final = ''
+                while i < len(temp):
+                    t3 = temp[a:b]
+                    a += 12
+                    b += 12
+                    i += 12
+                    t4 = temp[c:d]
+                    c += 12
+                    d += 12
+                    if t3 == '0110':
+                        decimal_data = BinaryToDecimal(t4)
+                        final += chr((decimal_data ^ 170) + 48)
+                    elif t3 == '0011':
+                        decimal_data = BinaryToDecimal(t4)
+                        final += chr((decimal_data ^ 170) - 48)
+
+                feedback_label3.configure(text="Message after decoding from the stego file:\n" + final)
+
+            except FileNotFoundError:
+                feedback_label.configure(text=f"File not found: {stego_file_name}")
+
+        # Create GUI components for decoding
+        decode_window = customtkinter.CTk()
+        decode_window.geometry("600x400")
+        decode_window.title("Decode Text Data")
+
+        stego_label = customtkinter.CTkLabel(decode_window, text="Enter the stego file name (with extension):")
+        stego_label.pack(padx=20, pady=10)
+
+        stego_entry = customtkinter.CTkEntry(decode_window, width=200)
+        stego_entry.pack(padx=20, pady=10)
+
+        decode_button = customtkinter.CTkButton(decode_window, text="Decode Text Data", width=30, command=decode_data)
+        decode_button.pack(padx=20, pady=10)
+
+        feedback_label = customtkinter.CTkLabel(decode_window, text="", width=60, height=5)
+        feedback_label.pack(padx=20, pady=10)
+
+        feedback_label2 = customtkinter.CTkLabel(decode_window, text="", width=60)
+        feedback_label2.pack(padx=20, pady=10)
+
+        feedback_label3 = customtkinter.CTkLabel(decode_window, text="", width=60, height=5)
+        feedback_label3.pack(padx=20, pady=10)
+
+        decode_window.mainloop()
+
+    perform_decode()
+
+def txt_steg():
+    txt_steg_window = customtkinter.CTk()
+    txt_steg_window.geometry("400x300")
+    txt_steg_window.title("Text Steganography")
+
+    encode_button = customtkinter.CTkButton(txt_steg_window, text="Encode the Text message", width=30, command=encode_txt_data)
+    encode_button.pack(padx=30, pady=30)
+
+    decode_button = customtkinter.CTkButton(txt_steg_window, text="Decode the Text message", width=30, command=decode_txt_data)
+    decode_button.pack(padx=20, pady=10)
+
+    exit_button = customtkinter.CTkButton(txt_steg_window, text="Exit", width=30, command=txt_steg_window.destroy)
+    exit_button.pack(padx=20, pady=10)
+
+    txt_steg_window.mainloop()
+
 
 
 
@@ -145,7 +425,7 @@ heading_label.pack(padx=10, pady=10)
 img_steg_button = customtkinter.CTkButton(app, text="IMAGE STEGANOGRAPHY", width=140, command=img_steg)
 img_steg_button.pack(padx=20, pady=10)
 
-txt_steg_button = customtkinter.CTkButton(app, text="TEXT STEGANOGRAPHY", width=140)
+txt_steg_button = customtkinter.CTkButton(app, text="TEXT STEGANOGRAPHY", width=140, command= txt_steg)
 txt_steg_button.pack(padx=20, pady=10)
 
 aud_steg_button = customtkinter.CTkButton(app, text="AUDIO STEGANOGRAPHY", width=140)
