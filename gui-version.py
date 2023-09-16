@@ -2,6 +2,7 @@ import numpy as np
 import cv2
 import customtkinter
 import threading
+import wave
 
 result_label = None
 
@@ -404,6 +405,161 @@ def txt_steg():
 
     txt_steg_window.mainloop()
 
+def encode_aud_data():
+    def encode_audio_data():
+        nameoffile = file_entry.get()
+        stegofile = stego_entry.get()
+        data = data_entry.get("1.0", "end-1c")
+
+        if not nameoffile or not stegofile or not data:
+            feedback_label.configure(text="Please fill in all the fields.")
+            return
+
+        try:
+            song = wave.open(nameoffile, mode='rb')
+            nframes = song.getnframes()
+            frames = song.readframes(nframes)
+            frame_list = list(frames)
+            frame_bytes = bytearray(frame_list)
+
+            res = ''.join(format(i, '08b') for i in bytearray(data, encoding='utf-8'))
+            length = len(res)
+
+            data = data + '*^*^*'
+
+            result = []
+            for c in data:
+                bits = bin(ord(c))[2:].zfill(8)
+                result.extend([int(b) for b in bits])
+
+            j = 0
+            for i in range(0, len(result), 1):
+                res = bin(frame_bytes[j])[2:].zfill(8)
+                if res[len(res) - 4] == str(result[i]):
+                    frame_bytes[j] = (frame_bytes[j] & 253)  # 253: 11111101
+                else:
+                    frame_bytes[j] = (frame_bytes[j] & 253) | 2
+                    frame_bytes[j] = (frame_bytes[j] & 254) | result[i]
+                j = j + 1
+
+            frame_modified = bytes(frame_bytes)
+
+            with wave.open(stegofile, 'wb') as fd:
+                fd.setparams(song.getparams())
+                fd.writeframes(frame_modified)
+
+            feedback_label.configure(text="Encoded the data successfully in the audio file.")
+            song.close()
+        except Exception as e:
+            feedback_label.configure(text=f"Error: {str(e)}")
+
+    encode_aud_window = customtkinter.CTk()
+    encode_aud_window.geometry("720x480")
+    encode_aud_window.title("Encode Audio Data")
+
+    h2_label = customtkinter.CTkLabel(encode_aud_window, text="AUDIO STEGANOGRAPHY - Encode Audio Data")
+    h2_label.pack(padx=10, pady=10)
+
+    file_label = customtkinter.CTkLabel(encode_aud_window, text="Enter the name of the audio file (with extension):")
+    file_label.pack(padx=20, pady=10)
+
+    file_entry = customtkinter.CTkEntry(encode_aud_window, width=200)
+    file_entry.pack(padx=20, pady=10)
+
+    stego_label = customtkinter.CTkLabel(encode_aud_window, text="Enter the name of the stego file (with extension):")
+    stego_label.pack(padx=20, pady=10)
+
+    stego_entry = customtkinter.CTkEntry(encode_aud_window, width=200)
+    stego_entry.pack(padx=20, pady=10)
+
+    data_label = customtkinter.CTkLabel(encode_aud_window, text="Enter the secret message:")
+    data_label.pack(padx=20, pady=10)
+
+    data_entry = customtkinter.CTkTextbox(encode_aud_window, width=200, height=10)
+    data_entry.pack(padx=20, pady=10)
+
+    encode_button = customtkinter.CTkButton(encode_aud_window, text="Encode Audio Data", width=30, command=encode_audio_data)
+    encode_button.pack(padx=20, pady=10)
+
+    feedback_label = customtkinter.CTkLabel(encode_aud_window, text="", width=60)
+    feedback_label.pack(padx=20, pady=10)
+
+    encode_aud_window.mainloop()
+
+def decode_aud_data():
+    def decode_audio_data():
+        try:
+            nameoffile = file_entry.get()
+            song = wave.open(nameoffile, mode='rb')
+
+            nframes = song.getnframes()
+            frames = song.readframes(nframes)
+            frame_list = list(frames)
+            frame_bytes = bytearray(frame_list)
+
+            extracted = ""
+            p = 0
+            for i in range(len(frame_bytes)):
+                if p == 1:
+                    break
+                res = bin(frame_bytes[i])[2:].zfill(8)
+                if res[len(res) - 2] == '0':
+                    extracted += res[len(res) - 4]
+                else:
+                    extracted += res[len(res) - 1]
+
+                all_bytes = [extracted[i: i + 8] for i in range(0, len(extracted), 8)]
+                decoded_data = ""
+                for byte in all_bytes:
+                    decoded_data += chr(int(byte, 2))
+                    if decoded_data[-5:] == "*^*^*":
+                        feedback_label.configure(text="The Encoded data was: " + decoded_data[:-5])
+                        p = 1
+                        break
+        except Exception as e:
+            feedback_label.configure(text="Error: " + str(e))
+
+    decode_aud_window = customtkinter.CTk()
+    decode_aud_window.geometry("720x480")
+    decode_aud_window.title("Decode Audio Data")
+
+    h2_label = customtkinter.CTkLabel(decode_aud_window, text="AUDIO STEGANOGRAPHY - Decode Audio Data")
+    h2_label.pack(padx=10, pady=10)
+
+    file_label = customtkinter.CTkLabel(decode_aud_window, text="Enter the name of the audio file to be decoded (with extension):")
+    file_label.pack(padx=20, pady=10)
+
+    file_entry = customtkinter.CTkEntry(decode_aud_window, width=200)
+    file_entry.pack(padx=20, pady=10)
+
+    decode_button = customtkinter.CTkButton(decode_aud_window, text="Decode Audio Data", width=30, command=decode_audio_data)
+    decode_button.pack(padx=20, pady=10)
+
+    feedback_label = customtkinter.CTkLabel(decode_aud_window, text="", width=200, height=10)
+    feedback_label.pack(padx=20, pady=10)
+
+    decode_aud_window.mainloop()
+
+
+def aud_steg():
+    aud_steg_window = customtkinter.CTk()
+    aud_steg_window.geometry("720x480")
+    aud_steg_window.title("Audio Steganography")
+
+    h2_label = customtkinter.CTkLabel(aud_steg_window, text="AUDIO STEGANOGRAPHY OPERATIONS")
+    h2_label.pack(padx=10, pady=10)
+
+    encode_button = customtkinter.CTkButton(aud_steg_window, text="Encode the Text message", width=140, command=encode_aud_data)
+    encode_button.pack(padx=20, pady=10)
+
+    decode_button = customtkinter.CTkButton(aud_steg_window, text="Decode the Text message", width=140, command=decode_aud_data)
+    decode_button.pack(padx=20, pady=10)
+
+    exit_button = customtkinter.CTkButton(aud_steg_window, text="EXIT", width=140, command=aud_steg_window.destroy)
+    exit_button.pack(padx=20, pady=10)
+
+    aud_steg_window.mainloop()
+
 
 
 
@@ -428,7 +584,7 @@ img_steg_button.pack(padx=20, pady=10)
 txt_steg_button = customtkinter.CTkButton(app, text="TEXT STEGANOGRAPHY", width=140, command= txt_steg)
 txt_steg_button.pack(padx=20, pady=10)
 
-aud_steg_button = customtkinter.CTkButton(app, text="AUDIO STEGANOGRAPHY", width=140)
+aud_steg_button = customtkinter.CTkButton(app, text="AUDIO STEGANOGRAPHY", width=140, command= aud_steg)
 aud_steg_button.pack(padx=20, pady=10)
 
 vid_steg_button = customtkinter.CTkButton(app, text="VIDEO STEGANOGRAPHY", width=140)
