@@ -560,6 +560,150 @@ def aud_steg():
 
     aud_steg_window.mainloop()
 
+def embed(frame):
+    def perform_embedding():
+        data = data_entry.get()
+        encrypted_data = encryption(data)
+        print("The encrypted data is: ", encrypted_data)
+
+        if len(data) == 0:
+            feedback_label.configure(text="Data entered to be encoded is empty")
+            return
+
+        data += '*^*^*'
+
+        binary_data = msgtobinary(data)
+        length_data = len(binary_data)
+
+        index_data = 0
+
+        for i in frame:
+            for pixel in i:
+                r, g, b = msgtobinary(pixel)
+                if index_data < length_data:
+                    pixel[0] = int(r[:-1] + binary_data[index_data], 2)
+                    index_data += 1
+                if index_data < length_data:
+                    pixel[1] = int(g[:-1] + binary_data[index_data], 2)
+                    index_data += 1
+                if index_data < length_data:
+                    pixel[2] = int(b[:-1] + binary_data[index_data], 2)
+                    index_data += 1
+                if index_data >= length_data:
+                    break
+        return frame
+
+    embed_window = customtkinter.CTk()
+    embed_window.geometry("600x400")
+    embed_window.title("Embed Data in Video")
+
+    data_label = customtkinter.CTkLabel(embed_window, text="Enter the data to be encoded in the video:")
+    data_label.pack(padx=20, pady=10)
+
+    data_entry = customtkinter.CTkEntry(embed_window, width=40)
+    data_entry.pack(padx=20, pady=10)
+
+    embed_button = customtkinter.CTkButton(embed_window, text="Embed Data", width=30, command=perform_embedding)
+    embed_button.pack(padx=20, pady=10)
+
+    embed_window.mainloop()
+
+def encode_video_data():
+    def perform_encoding():
+        video_file_path = video_entry.get()
+        if not video_file_path:
+            feedback_label.configure(text="Please enter the video file path.")
+            return
+
+        try:
+            cap = cv2.VideoCapture(video_file_path)
+            if not cap.isOpened():
+                feedback_label.configure(text="Error: Could not open the video file.")
+                return
+
+            fourcc = cv2.VideoWriter_fourcc(*'XVID')
+            frame_width = int(cap.get(3))
+            frame_height = int(cap.get(4))
+
+            size = (frame_width, frame_height)
+            out = cv2.VideoWriter('stego_video.mp4', fourcc, 25.0, size)
+
+            max_frame = 0
+            while cap.isOpened():
+                ret, _ = cap.read()
+                if not ret:
+                    break
+                max_frame += 1
+
+            cap.release()
+
+            feedback_label.configure(text=f"Total number of frames in selected video: {max_frame}")
+            frame_number = int(frame_number_entry.get())
+
+            if frame_number < 1 or frame_number > max_frame:
+                feedback_label.configure(text="Invalid frame number. Please enter a valid frame number.")
+                return
+
+            frame_ = None
+            frame_number = 0
+
+            while vidcap.isOpened():
+                frame_number += 1
+                ret, frame = vidcap.read()
+                if not ret:
+                    break
+                if frame_number == n:
+                    frame_ = embed(frame)
+                    frame = frame_
+                out.write(frame)
+
+            feedback_label.configure(text="Encoded the data successfully in the video file.")
+        except Exception as e:
+            feedback_label.configure(text=f"Error: {str(e)}")
+
+    encode_window = customtkinter.CTk()
+    encode_window.geometry("600x400")
+    encode_window.title("Encode Video Data")
+
+    video_label = customtkinter.CTkLabel(encode_window, text="Enter the video file path:")
+    video_label.pack(padx=20, pady=10)
+
+    video_entry = customtkinter.CTkEntry(encode_window, width=40)
+    video_entry.pack(padx=20, pady=10)
+
+    frame_number_label = customtkinter.CTkLabel(encode_window, text="Enter the frame number to embed data:")
+    frame_number_label.pack(padx=20, pady=10)
+
+    frame_number_entry = customtkinter.CTkEntry(encode_window, width=40)
+    frame_number_entry.pack(padx=20, pady=10)
+
+    encode_button = customtkinter.CTkButton(encode_window, text="Encode Video Data", width=30, command=perform_encoding)
+    encode_button.pack(padx=20, pady=10)
+
+    feedback_label = customtkinter.CTkLabel(encode_window, text="", width=60, height=5)
+    feedback_label.pack(padx=20, pady=10)
+
+    encode_window.mainloop()
+
+
+def vid_steg():
+    vid_steg_window = customtkinter.CTk()
+    vid_steg_window.geometry("720x480")
+    vid_steg_window.title("VIDEO STEGANOGRAPHY - Main Menu")
+
+    h2_label = customtkinter.CTkLabel(vid_steg_window, text="VIDEO STEGANOGRAPHY OPERATIONS")
+    h2_label.pack(padx=10, pady=10)
+
+    encode_button = customtkinter.CTkButton(vid_steg_window, text="Encode Text Message", width=140, command=encode_vid_data)
+    encode_button.pack(padx=20, pady=10)
+
+    decode_button = customtkinter.CTkButton(vid_steg_window, text="Decode Text Message", width=140, command=decode_vid_data)
+    decode_button.pack(padx=20, pady=10)
+
+    exit_button = customtkinter.CTkButton(vid_steg_window, text="Exit", width=140, command=vid_steg_window.destroy)
+    exit_button.pack(padx=20, pady=10)
+
+    vid_steg_window.mainloop()
 
 
 
@@ -587,7 +731,7 @@ txt_steg_button.pack(padx=20, pady=10)
 aud_steg_button = customtkinter.CTkButton(app, text="AUDIO STEGANOGRAPHY", width=140, command= aud_steg)
 aud_steg_button.pack(padx=20, pady=10)
 
-vid_steg_button = customtkinter.CTkButton(app, text="VIDEO STEGANOGRAPHY", width=140)
+vid_steg_button = customtkinter.CTkButton(app, text="VIDEO STEGANOGRAPHY", width=140, command= vid_steg)
 vid_steg_button.pack(padx=20, pady=10)
 
 exit_button = customtkinter.CTkButton(app, text="EXIT", width=140, command=app.destroy)
