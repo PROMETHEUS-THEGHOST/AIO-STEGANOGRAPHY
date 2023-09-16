@@ -1,54 +1,18 @@
 import numpy as np
-import pandas as pd  # Fixed typo in module name
-import os
 import cv2
-from matplotlib import pyplot as plt
-import tkinter as tk  # Changed tkinter import
 import customtkinter
 
 result_label = None
 
 # Functions
-def msgtobinary(data):
-    # Create GUI components for input and binary result
-    msg_entry = customtkinter.CTkEntry(app, width=40)
-    msg_entry.pack(padx=20, pady=10)
-
-    binary_result_label = customtkinter.CTkLabel(app, text="", width=50)
-    binary_result_label.pack(padx=20, pady=10)
-
-    def convert_to_binary():
-        msg = msg_entry.get()
-
-        if type(msg) == str:
-            result = ''.join([format(ord(i), "08b") for i in msg])
-        elif type(msg) == bytes or type(msg) == np.ndarray:
-            result = [format(i, "08b") for i in msg]
-        elif type(msg) == int or type(msg) == np.uint8:
-            result = format(msg, "08b")
-        else:
-            binary_result_label.configure(text="Input type is not supported in this function")
-            return
-
-        binary_result_label.configure(text="Binary result:\n" + result)
-        return result
-    
-    # Call the convert_to_binary function immediately and return its result
-    return convert_to_binary()
-
-
-# Create the main app
-app = customtkinter.CTk()
-app.geometry("720x480")
-app.title("PROTON STEGANOGRAPHY")
-
-# Call msgtobinary function with the app as an argument
-msgtobinary(app)
-
-# Start the main loop
-app.mainloop()
-
-
+def msgtobinary(msg):
+    if type(msg) == str:
+        result = ''.join([format(ord(i), "08b") for i in msg])
+    elif type(msg) == bytes or type(msg) == np.ndarray:
+        result = [format(i, "08b") for i in msg]
+    elif type(msg) == int or type(msg) == np.uint8:
+        result = format(msg, "08b")
+    return result
 
 def encode_img_data(img):
     # Create GUI components for input and feedback
@@ -90,8 +54,9 @@ def encode_img_data(img):
 
         index_data = 0
 
-        for i in img:
-            for pixel in i:
+        for i in range(img.shape[0]):
+            for j in range(img.shape[1]):
+                pixel = img[i, j]
                 r, g, b = msgtobinary(pixel)
                 if index_data < length_data:
                     pixel[0] = int(r[:-1] + binary_data[index_data], 2)
@@ -104,9 +69,10 @@ def encode_img_data(img):
                     index_data += 1
                 if index_data >= length_data:
                     break
-        
+
         cv2.imwrite(nameoffile, img)
         feedback_label.configure(text=f"Encoded the data successfully in the Image, and the image is successfully saved with the name {nameoffile}")
+
     
     # Create a button to trigger encoding
     encode_button = customtkinter.CTkButton(encode_img_data_window, text="Encode Image", width=140, command=encode_data)
@@ -130,7 +96,6 @@ def decode_img_data(img):
         decoded_data += chr(int(byte, 2))
         if decoded_data[-5:] == "*^*^*":
             result_label.configure(text=f"The Encoded data that was hidden in the Image was :--  {decoded_data[:-5]}")
-            return
 
 
 def encode_image():
@@ -189,7 +154,7 @@ aud_steg_button.pack(padx=20, pady=10)
 vid_steg_button = customtkinter.CTkButton(app, text="VIDEO STEGANOGRAPHY", width=140)
 vid_steg_button.pack(padx=20, pady=10)
 
-exit_button = customtkinter.CTkButton(app, text="EXIT", width=140)
+exit_button = customtkinter.CTkButton(app, text="EXIT", width=140, command=app.destroy)
 exit_button.pack(padx=20, pady=10)
 
 app.mainloop()
