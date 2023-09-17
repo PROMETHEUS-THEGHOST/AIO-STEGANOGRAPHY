@@ -560,6 +560,41 @@ def aud_steg():
 
     aud_steg_window.mainloop()
 
+def KSA(key):
+    key_length = len(key)
+    S=list(range(256)) 
+    j=0
+    for i in range(256):
+        j=(j+S[i]+key[i % key_length]) % 256
+        S[i],S[j]=S[j],S[i]
+    return S
+
+def PRGA(S,n):
+    i=0
+    j=0
+    key=[]
+    while n>0:
+        n=n-1
+        i=(i+1)%256
+        j=(j+S[i])%256
+        S[i],S[j]=S[j],S[i]
+        K=S[(S[i]+S[j])%256]
+        key.append(K)
+    return key
+
+def preparing_key_array(s):
+    return [ord(c) for c in s]
+
+def encryption(plaintext, key):
+    key = preparing_key_array(key)
+    S = KSA(key)
+    keystream = np.array(PRGA(S, len(plaintext)))
+    plaintext = np.array([ord(i) for i in plaintext])
+    cipher = keystream ^ plaintext
+    ctext = ''.join([chr(c) for c in cipher])
+    return ctext
+
+
 def embed(frame):
     def perform_embedding():
         data = data_entry.get()
@@ -591,7 +626,7 @@ def embed(frame):
                     index_data += 1
                 if index_data >= length_data:
                     break
-        return frame
+        feedback_label.configure(text="Data embedded successfully")  # Configure feedback_label here
 
     embed_window = customtkinter.CTk()
     embed_window.geometry("600x400")
@@ -606,9 +641,13 @@ def embed(frame):
     embed_button = customtkinter.CTkButton(embed_window, text="Embed Data", width=30, command=perform_embedding)
     embed_button.pack(padx=20, pady=10)
 
+    feedback_label = customtkinter.CTkLabel(embed_window, text="", width=60, height=5)
+    feedback_label.pack(padx=20, pady=10)
+
     embed_window.mainloop()
 
-def encode_video_data():
+
+def encode_vid_data():
     def perform_encoding():
         video_file_path = video_entry.get()
         if not video_file_path:
@@ -617,6 +656,7 @@ def encode_video_data():
 
         try:
             cap = cv2.VideoCapture(video_file_path)
+            vidcap = cv2.VideoCapture(video_file_path)
             if not cap.isOpened():
                 feedback_label.configure(text="Error: Could not open the video file.")
                 return
@@ -652,8 +692,8 @@ def encode_video_data():
                 ret, frame = vidcap.read()
                 if not ret:
                     break
-                if frame_number == n:
-                    frame_ = embed(frame)
+                if frame_number == frame_number:  # Replace 'n' with 'frame_number'
+                    frame_ = embed(frame_number)  # Replace 'n' with 'frame_number'
                     frame = frame_
                 out.write(frame)
 
@@ -684,6 +724,122 @@ def encode_video_data():
     feedback_label.pack(padx=20, pady=10)
 
     encode_window.mainloop()
+
+def decryption(ciphertext):
+    def perform_decryption():
+        key = key_entry.get()
+        key = preparing_key_array(key)
+
+        S = KSA(key)
+
+        keystream = np.array(PRGA(S, len(ciphertext)))
+        ciphertext = np.array([ord(i) for i in ciphertext])
+
+        decoded = keystream ^ ciphertext
+        dtext = ''
+        for c in decoded:
+            dtext = dtext + chr(c)
+        feedback_label.configure(text="Decrypted Data:\n" + dtext)
+
+    decryption_window = customtkinter.CTk()
+    decryption_window.geometry("600x400")
+    decryption_window.title("Data Decryption")
+
+    key_label = customtkinter.CTkLabel(decryption_window, text="Enter the decryption key:")
+    key_label.pack(padx=20, pady=10)
+
+    key_entry = customtkinter.CTkEntry(decryption_window, width=40)
+    key_entry.pack(padx=20, pady=10)
+
+    decrypt_button = customtkinter.CTkButton(decryption_window, text="Decrypt Data", width=30, command=perform_decryption)
+    decrypt_button.pack(padx=20, pady=10)
+
+    feedback_label = customtkinter.CTkLabel(decryption_window, text="", width=60, height=5)
+    feedback_label.pack(padx=20, pady=10)
+
+    decryption_window.mainloop()
+
+def extract(frame):
+    def perform_extraction():
+        data_binary = ""
+        final_decoded_msg = ""
+        for i in frame:
+            for pixel in i:
+                r, g, b = msgtobinary(pixel)
+                data_binary += r[-1]
+                data_binary += g[-1]
+                data_binary += b[-1]
+                total_bytes = [data_binary[i: i+8] for i in range(0, len(data_binary), 8)]
+                decoded_data = ""
+                for byte in total_bytes:
+                    decoded_data += chr(int(byte, 2))
+                    if decoded_data[-5:] == "*^*^*":
+                        for i in range(0, len(decoded_data)-5):
+                            final_decoded_msg += decoded_data[i]
+                        final_decoded_msg = decryption(final_decoded_msg)
+                        feedback_label.configure(text="The Encoded data hidden in the Video:\n" + final_decoded_msg)
+                        return
+
+    extraction_window = customtkinter.CTk()
+    extraction_window.geometry("600x400")
+    extraction_window.title("Video Data Extraction")
+
+    extract_button = customtkinter.CTkButton(extraction_window, text="Extract Data", width=30, command=perform_extraction)
+    extract_button.pack(padx=20, pady=10)
+
+    feedback_label = customtkinter.CTkLabel(extraction_window, text="", width=60, height=5)
+    feedback_label.pack(padx=20, pady=10)
+
+    extraction_window.mainloop()
+
+def decode_vid_data():
+    def perform_extraction():
+        frame_number = frame_number_entry.get()
+        if not frame_number.isdigit() or int(frame_number) < 1:
+            feedback_label.configure(text="Invalid frame number. Please enter a valid positive integer.")
+        else:
+            frame_number = int(frame_number)
+            cap = cv2.VideoCapture('stego_video.mp4')
+            max_frame = 0
+            while cap.isOpened():
+                ret, _ = cap.read()
+                if not ret:
+                    break
+                max_frame += 1
+
+            cap.release()
+
+            if frame_number > max_frame:
+                feedback_label.configure(text="Frame number exceeds the total number of frames.")
+            else:
+                vidcap = cv2.VideoCapture('stego_video.mp4')
+                frame_count = 0
+                while vidcap.isOpened():
+                    frame_count += 1
+                    ret, frame = vidcap.read()
+                    if not ret:
+                        break
+                    if frame_count == frame_number:
+                        extracted_data = extract(frame)
+                        feedback_label.configure(text="Extracted data: " + extracted_data)
+
+    extraction_window = customtkinter.CTk()
+    extraction_window.geometry("400x200")
+    extraction_window.title("Video Data Extraction")
+
+    frame_number_label = customtkinter.CTkLabel(extraction_window, text="Enter frame number to extract data from:")
+    frame_number_label.pack(padx=20, pady=10)
+
+    frame_number_entry = customtkinter.CTkEntry(extraction_window, width=40)
+    frame_number_entry.pack(padx=20, pady=10)
+
+    extract_button = customtkinter.CTkButton(extraction_window, text="Extract Data", width=20, command=perform_extraction)
+    extract_button.pack(padx=20, pady=10)
+
+    feedback_label = customtkinter.CTkLabel(extraction_window, text="", width=40)
+    feedback_label.pack(padx=20, pady=10)
+
+    extraction_window.mainloop()
 
 
 def vid_steg():
