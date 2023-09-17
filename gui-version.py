@@ -22,6 +22,7 @@ def encode_img_data(img):
     # Create GUI components for input and feedback
     encode_img_data_window = customtkinter.CTk()
     encode_img_data_window.geometry("720x480")
+    encode_img_data_window.resizable(False, False)
     encode_img_data_window.title("Image Steganography")
     data_entry = customtkinter.CTkEntry(encode_img_data_window, width=500, height=10, placeholder_text="Enter the data to be Encoded in Image")
     data_entry.pack(padx=30, pady=10)
@@ -132,6 +133,7 @@ def decode_image():
 
     decode_window = customtkinter.CTk()
     decode_window.geometry("400x200")
+    decode_window.resizable(False, False)
     decode_window.title("Decode Image")
 
     image_label = customtkinter.CTkLabel(decode_window, text="Enter the name of the image file:")
@@ -153,6 +155,7 @@ def decode_image():
 def img_steg():
     img_steg_window = customtkinter.CTk()
     img_steg_window.geometry("720x480")
+    img_steg_window.resizable(False, False)
     img_steg_window.title("Image Steganography")
 
     h2_label = customtkinter.CTkLabel(img_steg_window, text="IMAGE STEGANOGRAPHY OPERATIONS")
@@ -241,6 +244,7 @@ def txt_encode(text):
 
         encode_window = customtkinter.CTk()
         encode_window.geometry("600x400")
+        encode_window.resizable(False, False)
         encode_window.title("Encode Text Data")
 
         text_label = customtkinter.CTkLabel(encode_window, text="Enter data to be encoded:")
@@ -288,6 +292,7 @@ def encode_txt_data():
 
     encode_window = customtkinter.CTk()
     encode_window.geometry("400x400")
+    encode_window.resizable(False, False)
     encode_window.title("Encode Text Data")
 
     text_label = customtkinter.CTkLabel(encode_window, text="Enter data to be encoded:")
@@ -365,6 +370,7 @@ def decode_txt_data():
         # Create GUI components for decoding
         decode_window = customtkinter.CTk()
         decode_window.geometry("600x400")
+        decode_window.resizable(False, False)
         decode_window.title("Decode Text Data")
 
         stego_label = customtkinter.CTkLabel(decode_window, text="Enter the stego file name (with extension):")
@@ -392,6 +398,7 @@ def decode_txt_data():
 def txt_steg():
     txt_steg_window = customtkinter.CTk()
     txt_steg_window.geometry("400x300")
+    txt_steg_window.resizable(False, False)
     txt_steg_window.title("Text Steganography")
 
     encode_button = customtkinter.CTkButton(txt_steg_window, text="Encode the Text message", width=30, command=encode_txt_data)
@@ -455,6 +462,7 @@ def encode_aud_data():
 
     encode_aud_window = customtkinter.CTk()
     encode_aud_window.geometry("720x480")
+    encode_aud_window.resizable(False, False)
     encode_aud_window.title("Encode Audio Data")
 
     h2_label = customtkinter.CTkLabel(encode_aud_window, text="AUDIO STEGANOGRAPHY - Encode Audio Data")
@@ -521,6 +529,7 @@ def decode_aud_data():
 
     decode_aud_window = customtkinter.CTk()
     decode_aud_window.geometry("720x480")
+    decode_aud_window.resizable(False, False)
     decode_aud_window.title("Decode Audio Data")
 
     h2_label = customtkinter.CTkLabel(decode_aud_window, text="AUDIO STEGANOGRAPHY - Decode Audio Data")
@@ -544,6 +553,7 @@ def decode_aud_data():
 def aud_steg():
     aud_steg_window = customtkinter.CTk()
     aud_steg_window.geometry("720x480")
+    aud_steg_window.resizable(False, False)
     aud_steg_window.title("Audio Steganography")
 
     h2_label = customtkinter.CTkLabel(aud_steg_window, text="AUDIO STEGANOGRAPHY OPERATIONS")
@@ -630,12 +640,13 @@ def embed(frame):
 
     embed_window = customtkinter.CTk()
     embed_window.geometry("600x400")
+    embed_window.resizable(False, False)
     embed_window.title("Embed Data in Video")
 
     data_label = customtkinter.CTkLabel(embed_window, text="Enter the data to be encoded in the video:")
     data_label.pack(padx=20, pady=10)
 
-    data_entry = customtkinter.CTkEntry(embed_window, width=40)
+    data_entry = customtkinter.CTkEntry(embed_window, width=200)
     data_entry.pack(padx=20, pady=10)
 
     embed_button = customtkinter.CTkButton(embed_window, text="Embed Data", width=30, command=perform_embedding)
@@ -703,18 +714,19 @@ def encode_vid_data():
 
     encode_window = customtkinter.CTk()
     encode_window.geometry("600x400")
+    encode_window.resizable(False, False)
     encode_window.title("Encode Video Data")
 
     video_label = customtkinter.CTkLabel(encode_window, text="Enter the video file path:")
     video_label.pack(padx=20, pady=10)
 
-    video_entry = customtkinter.CTkEntry(encode_window, width=40)
+    video_entry = customtkinter.CTkEntry(encode_window, width=200)
     video_entry.pack(padx=20, pady=10)
 
     frame_number_label = customtkinter.CTkLabel(encode_window, text="Enter the frame number to embed data:")
     frame_number_label.pack(padx=20, pady=10)
 
-    frame_number_entry = customtkinter.CTkEntry(encode_window, width=40)
+    frame_number_entry = customtkinter.CTkEntry(encode_window, width=200)
     frame_number_entry.pack(padx=20, pady=10)
 
     encode_button = customtkinter.CTkButton(encode_window, text="Encode Video Data", width=30, command=perform_encoding)
@@ -743,6 +755,7 @@ def decryption(ciphertext):
 
     decryption_window = customtkinter.CTk()
     decryption_window.geometry("600x400")
+    decryption_window.resizable(False, False)
     decryption_window.title("Data Decryption")
 
     key_label = customtkinter.CTkLabel(decryption_window, text="Enter the decryption key:")
@@ -782,6 +795,7 @@ def extract(frame):
 
     extraction_window = customtkinter.CTk()
     extraction_window.geometry("600x400")
+    extraction_window.resizable(False, False)
     extraction_window.title("Video Data Extraction")
 
     extract_button = customtkinter.CTkButton(extraction_window, text="Extract Data", width=30, command=perform_extraction)
@@ -825,12 +839,13 @@ def decode_vid_data():
 
     extraction_window = customtkinter.CTk()
     extraction_window.geometry("400x200")
+    extraction_window.resizable(False, False)
     extraction_window.title("Video Data Extraction")
 
     frame_number_label = customtkinter.CTkLabel(extraction_window, text="Enter frame number to extract data from:")
     frame_number_label.pack(padx=20, pady=10)
 
-    frame_number_entry = customtkinter.CTkEntry(extraction_window, width=40)
+    frame_number_entry = customtkinter.CTkEntry(extraction_window, width=200)
     frame_number_entry.pack(padx=20, pady=10)
 
     extract_button = customtkinter.CTkButton(extraction_window, text="Extract Data", width=20, command=perform_extraction)
@@ -845,6 +860,7 @@ def decode_vid_data():
 def vid_steg():
     vid_steg_window = customtkinter.CTk()
     vid_steg_window.geometry("720x480")
+    vid_steg_window.resizable(False, False)
     vid_steg_window.title("VIDEO STEGANOGRAPHY - Main Menu")
 
     h2_label = customtkinter.CTkLabel(vid_steg_window, text="VIDEO STEGANOGRAPHY OPERATIONS")
@@ -870,6 +886,7 @@ customtkinter.set_default_color_theme("blue")
 # App Frame
 app = customtkinter.CTk()
 app.geometry("720x480")
+app.resizable(False, False)
 app.title("PROTON STEGANOGRAPHY")
 
 # UI Elements
